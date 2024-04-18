@@ -31,10 +31,8 @@ int main(int argc, char **argv) {
   listenfd = Open_listenfd(argv[1]);
   while (1) {
     clientlen = sizeof(clientaddr);
-    connfd = Accept(listenfd, (SA *)&clientaddr,
-                    &clientlen);  // line:netp:tiny:accept
-    Getnameinfo((SA *)&clientaddr, clientlen, hostname, MAXLINE, port, MAXLINE,
-                0);
+    connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen);  // line:netp:tiny:accept
+    Getnameinfo((SA *)&clientaddr, clientlen, hostname, MAXLINE, port, MAXLINE, 0);
     printf("Accepted connection from (%s, %s)\n", hostname, port);
     doit(connfd);   // line:netp:tiny:doit
     Close(connfd);  // line:netp:tiny:close
@@ -52,32 +50,32 @@ void doit(int fd)
   /* Read request line and headers */
   Rio_readinitb(&rio, fd);
   Rio_readlineb(&rio, buf, MAXLINE);
-  printf("Request header:\n");
-  printf("%s", buf);
+  printf("Request header: %s\n", buf);
   sscanf(buf, "%s %s %s", method, uri, version);
+
   if (strcasecmp(method, "GET")) {
-    clienterror(fd, method, "501", "Not implemented", "Tiny does not implement this method");
-    return;
+        clienterror(fd, method, "501", "Not Implemented", "Tiny does not implement this method");
+      return;
   }
   read_requesthdrs(&rio);
 
   /* Parse URI from GET request */
   is_static = parse_uri(uri, filename, cgiargs);
   if (stat(filename, &sbuf) < 0) {
-    clienterror(fd, method, "404", "Not found", "Tiny couldn't find this file");
+    clienterror(fd, filename, "404", "Not found", "Tiny couldn't find this file");
     return;
   }
 
   if (is_static) { /* Serve static content */
     if (!(S_ISREG(sbuf.st_mode)) || !(S_IRUSR & sbuf.st_mode)) {
-      clienterror(fd, method, "403", "Forbidden", "Tiny couldn't find this file");
+      clienterror(fd, filename, "403", "Forbidden", "Tiny couldn't find this file");
       return;
     }
     serve_static(fd, filename, sbuf.st_size);
   }
   else { /* Serve dynamic content */
     if (!(S_ISREG(sbuf.st_mode)) || !(S_IXUSR & sbuf.st_mode)) {
-      clienterror(fd, method, "403", "Forbidden", "Tiny couldn't find this file");
+      clienterror(fd, filename, "403", "Forbidden", "Tiny couldn't run the CGI program");
       return;
     }
     serve_dynamic(fd, filename, cgiargs);
@@ -99,23 +97,21 @@ void read_requesthdrs(rio_t *rp)
 int parse_uri(char *uri, char *filename, char *cgiargs)
 {
   char *ptr;
-
+  
   if (!strstr(uri, "cgi-bin")) {
     strcpy(cgiargs, "");
     strcpy(filename, ".");
-    strcpy(filename, uri);
-    if (uri[strlen(uri) - 1] == "/")
-      strcat(filename, "home.html");
+    strcat(filename, uri);
+    if (uri[strlen(uri) - 1] == '/')
+        strcat(filename, "home.html");
     return 1;
-  }
-  else {
-    ptr = index(uri, "?");
+  } else {
+    ptr = index(uri, '?');
     if (ptr) {
-      strcpy(cgiargs, ptr+1);
-      *ptr = "\0";
-    }
-    else
-      strcpy(cgiargs, "");
+        strcpy(cgiargs, ptr + 1);
+        *ptr = '\0';
+    } else
+        strcpy(cgiargs, "");
     strcpy(filename, ".");
     strcat(filename, uri);
     return 0;
@@ -130,10 +126,10 @@ void serve_static(int fd, char *filename, int filesize)
   /* Send response headers to client */
   get_filetype(filename, filetype);
   sprintf(buf, "HTTP/1.0 200 Ok\r\n");
-  sprintf(buf, "%sServer: Tiney Web Server\r\n", buf);
+  sprintf(buf, "%sServer: Tiny Web Server\r\n", buf);
   sprintf(buf, "%sConnection: close\r\n", buf);
-  sprintf(buf, "%sContent-length: %s\r\n", buf, filesize);
-  sprintf(buf, "%sContent-type: %s\r\n", buf, filetype);
+  sprintf(buf, "%sContent-length: %d\r\n", buf, filesize);
+  sprintf(buf, "%sContent-type: %s\r\n\r\n", buf, filetype);
   Rio_writen(fd, buf, strlen(buf));
   printf("Response headers:\n");
   printf("%s", buf);
