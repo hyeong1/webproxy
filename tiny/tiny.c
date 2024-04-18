@@ -54,8 +54,8 @@ void doit(int fd)
   sscanf(buf, "%s %s %s", method, uri, version);
 
   if (strcasecmp(method, "GET")) {
-        clienterror(fd, method, "501", "Not Implemented", "Tiny does not implement this method");
-      return;
+    clienterror(fd, method, "501", "Not Implemented", "Tiny does not implement this method");
+    return;
   }
   read_requesthdrs(&rio);
 
@@ -97,21 +97,21 @@ void read_requesthdrs(rio_t *rp)
 int parse_uri(char *uri, char *filename, char *cgiargs)
 {
   char *ptr;
-  
+
   if (!strstr(uri, "cgi-bin")) {
     strcpy(cgiargs, "");
     strcpy(filename, ".");
     strcat(filename, uri);
     if (uri[strlen(uri) - 1] == '/')
-        strcat(filename, "home.html");
+      strcat(filename, "home.html");
     return 1;
   } else {
     ptr = index(uri, '?');
     if (ptr) {
-        strcpy(cgiargs, ptr + 1);
-        *ptr = '\0';
+      strcpy(cgiargs, ptr + 1);
+      *ptr = '\0';
     } else
-        strcpy(cgiargs, "");
+      strcpy(cgiargs, "");
     strcpy(filename, ".");
     strcat(filename, uri);
     return 0;
