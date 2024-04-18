@@ -1,7 +1,23 @@
 <html>
 <head><title>test</title></head>
 <body> 
-<img align="middle" src="godzilla.gif">
-Dave O'Hallaron
+    <div>
+        <img align="middle" src="godzilla.gif">
+        Dave O'Hallaron
+    </div>
+    <form onsubmit="handleSubmit(event)">
+        <input id="number1" type="text" placeholder="number1" />
+        <input id="number2" type="text" placeholder="number2" />
+        <button type="submit">submit</button>
+    </form>
+    
+    <script>
+        function handleSubmit(e) {
+            e.preventDefault();
+            const n1 = document.getElementById('number1').value;
+            const n2 = document.getElementById('number2').value;
+            window.location.href = `http://localhost:8000/cgi-bin/adder?${n1}&${n2}`;
+        }
+    </script>
 </body>
 </html>
