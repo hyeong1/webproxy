@@ -87,6 +87,7 @@ void read_requesthdrs(rio_t *rp)
   char buf[MAXLINE];
 
   Rio_readlineb(rp, buf, MAXLINE);
+  printf("%s", buf);  // 첫 줄 내용 확인
   while (strcmp(buf, "\r\n")) {
     Rio_readlineb(rp, buf, MAXLINE);
     printf("%s", buf);
@@ -174,11 +175,9 @@ void serve_dynamic(int fd, char *filename, char *cgiargs, char *method)
   sprintf(buf, "Server: Tiny Web Server\r\n");
   Rio_writen(fd, buf, strlen(buf));
 
-  if (!strcasecmp(method, "HEAD"))
-    return;
-
   if (Fork() == 0) {
     setenv("QUERY_STRING", cgiargs, 1);
+    setenv("REQUEST_METHOD", method, 1);
     Dup2(fd, STDOUT_FILENO);
     Execve(filename, emptylist, environ);
   }

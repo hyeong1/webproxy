@@ -19,7 +19,7 @@ int main(void) {
     n2 = atoi(arg2);
   }
 
-  method = getenv("QUERY_STRING");
+  method = getenv("REQUEST_METHOD");
 
   /* Make the response body */
   sprintf(content, "Welcome to add.com: ");
