@@ -93,8 +93,8 @@ void doit(int clientfd)
   Rio_writen(serverfd, request_buf, strlen(request_buf));
   
   ssize_t n;
-  n = Rio_readn(serverfd,response_buf,MAX_OBJECT_SIZE); // 응답 받는건 OBJECT_SIZE 만큼
-  Rio_writen(clientfd,response_buf,n);
+  n = Rio_readn(serverfd, response_buf, MAX_OBJECT_SIZE); // 응답 받는건 OBJECT_SIZE 만큼
+  Rio_writen(clientfd, response_buf, n);
   Close(serverfd);
 }
 
