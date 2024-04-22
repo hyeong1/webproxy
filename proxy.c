@@ -5,6 +5,7 @@
 #define MAX_CACHE_SIZE 1049000
 #define MAX_OBJECT_SIZE 102400
 
+void *thread(void *vargp);
 void doit(int clientfd);
 int parse_uri(char *uri, char *hostname, char *port, char *path);
 void read_requesthdrs(rio_t *rp);
@@ -18,10 +19,11 @@ static const char *user_agent_hdr =
 // static const int is_local_test = 1; // 외부에서 테스트 
 
 int main(int argc, char **argv) {
-  int listenfd, clientfd;
+  int listenfd, *clientfdp;
   char hostname[MAXLINE], port[MAXLINE];
   socklen_t clientlen;
   struct sockaddr_storage clientaddr;
+  pthread_t tid;
 
   /* Check command line args */
   if (argc != 2) {
@@ -33,12 +35,24 @@ int main(int argc, char **argv) {
   listenfd = Open_listenfd(argv[1]);
   while (1) {
     clientlen = sizeof(clientaddr);
-    clientfd = Accept(listenfd, (SA *)&clientaddr, &clientlen);  // line:netp:tiny:accept
+    clientfdp = malloc(sizeof(int));
+    *clientfdp = Accept(listenfd, (SA *)&clientaddr, &clientlen);  // line:netp:tiny:accept
     Getnameinfo((SA *)&clientaddr, clientlen, hostname, MAXLINE, port, MAXLINE, 0);
     printf("Accepted connection from (%s, %s)\n", hostname, port);
-    doit(clientfd);   // line:netp:tiny:doit
-    Close(clientfd);  // line:netp:tiny:close
+    Pthread_create(&tid, NULL, thread, clientfdp);
+    // doit(clientfd);   // line:netp:tiny:doit
+    // Close(clientfd);  // line:netp:tiny:close
   }
+}
+
+void *thread(void *vargp)
+{
+  int clientfd = *((int *)vargp);
+  Pthread_detach(pthread_self());
+  Free(vargp);
+  doit(clientfd);
+  Close(clientfd);
+  return NULL;
 }
 
 void doit(int clientfd)
@@ -54,7 +68,11 @@ void doit(int clientfd)
   printf("Request header: %s\n", request_buf);
   /* 요청 메소드, uri 읽기 */
   sscanf(request_buf, "%s %s", method, uri);
-  parse_uri(uri, hostname, port, path); // uri에서 hostname, port, path 파싱
+  
+  if (!strcasecmp(uri, "/favicon.ico")) 
+    return;
+  
+  parse_uri(uri, hostname, port, path); // uri에서 hostname, port, path 파싱 
 
   printf("uri: %s\n", uri);
 
