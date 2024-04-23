@@ -31,6 +31,8 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
+  signal(SIGPIPE, SIG_IGN); // broken pipe 에러 해결용 코드 -프로세스 전체에 대한 시그널 핸들러 설정
+
   /* 클라이언트 요청 받기 */
   listenfd = Open_listenfd(argv[1]);
   while (1) {
@@ -90,20 +92,20 @@ void doit(int clientfd)
   /* 엔드 서버로 클라이언트의 요청 보내기 */
   serverfd = Open_clientfd(hostname, port);
   printf("%s\n", request_buf);
-  Rio_writen(serverfd, request_buf, strlen(request_buf));
+  rio_writen(serverfd, request_buf, strlen(request_buf));
   Rio_readinitb(&response_rio, serverfd);
 
   ssize_t n;
   /* 응답 헤더 보내기 */
   while ((n = Rio_readlineb(&response_rio, response_buf, MAX_OBJECT_SIZE)) > 0) {
-    Rio_writen(clientfd, response_buf, n);
+    rio_writen(clientfd, response_buf, n);
     if (!strcmp(response_buf, "\r\n"))
       break;
   }
 
   /* 응답 본문 보내기 */
   while ((n = Rio_readlineb(&response_rio, response_buf, MAX_OBJECT_SIZE)) > 0) {
-    Rio_writen(clientfd, response_buf, n);
+    rio_writen(clientfd, response_buf, n);
   }
   Close(serverfd);
 }
@@ -155,10 +157,10 @@ void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longms
 
   /* Print the HTTP response */
   sprintf(buf, "HTTP/1.0 %s %s\r\n", errnum, shortmsg);
-  Rio_writen(fd, buf, strlen(buf));
+  rio_writen(fd, buf, strlen(buf));
   sprintf(buf, "Content-type: text/html\r\n");
-  Rio_writen(fd, buf, strlen(buf));
+  rio_writen(fd, buf, strlen(buf));
   sprintf(buf, "Content-length: %d\r\n\r\n", (int)strlen(body));
-  Rio_writen(fd, buf, strlen(buf));
-  Rio_writen(fd, body, strlen(body));
+  rio_writen(fd, buf, strlen(buf));
+  rio_writen(fd, body, strlen(body));
 }
