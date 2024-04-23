@@ -99,19 +99,19 @@ void doit(int clientfd)
 
   /* 캐시 확인 */
   if (cache_check = find_cache_obj(uri)) {
-    char buf[MAXBUF];
+    // char buf[MAXBUF];
     printf("cache hit\n");
     /* 캐시에서 꺼내서 클라이언트로 보내주기 */
     delete_cache_obj(cache_check); // head에 다시 넣어주려고 먼저 삭제함
     printf("============cache data=========\n%s\n============\n", cache_check->data);
     // 헤더 만들어주기
-    sprintf(buf, "HTTP/1.0 200 Ok\r\n");
-    sprintf(buf, "%sServer: Tiny Web Server\r\n", buf);
-    sprintf(buf, "%sConnection: close\r\n", buf);
-    sprintf(buf, "%sContent-length: %ld\r\n", buf, cache_check->size);
-    sprintf(buf, "%sContent-type: %s\r\n\r\n", buf, cache_check->content_type);
-    printf("cache response header:\n%s", buf);
-    rio_writen(clientfd, buf, strlen(buf)); // 헤더 전송
+    // sprintf(buf, "HTTP/1.0 200 Ok\r\n");
+    // sprintf(buf, "%sServer: Tiny Web Server\r\n", buf);
+    // sprintf(buf, "%sConnection: close\r\n", buf);
+    // sprintf(buf, "%sContent-length: %ld\r\n", buf, cache_check->size);
+    // sprintf(buf, "%sContent-type: %s\r\n\r\n", buf, cache_check->content_type);
+    // printf("cache response header:\n%s", buf);
+    // rio_writen(clientfd, buf, strlen(buf)); // 헤더 전송
     rio_writen(clientfd, cache_check->data, cache_check->size); // 바디 전송
     // 클라이언트로 보내주고 나서 hit한 캐시 객체를 다시 캐시 head에 넣어주기
     insert_cache_obj(cache_check);
@@ -141,39 +141,44 @@ void doit(int clientfd)
   long content_length;
   char *content_type = malloc(MAXLINE);
   /* 엔드 서버의 응답 헤더를 클라이언트로 보내기 */
-  while ((n = Rio_readlineb(&response_rio, response_buf, MAX_OBJECT_SIZE)) > 0) {
-    rio_writen(clientfd, response_buf, n);
-    if (strstr(response_buf, "Content-length")) 
-      content_length = parse_content_length(&response_buf); // 응답 body의 크기
-    if (strstr(response_buf, "Content-type"))  {
-      char *type_ptr = strstr(response_buf, "Content-type") + strlen("Content-type: ");
-      strcpy(content_type, type_ptr);
-    }
-    if (!strcmp(response_buf, "\r\n"))
-      break;
-  }
-  printf("=======content-type: %s\n", content_type);  
+  // while ((n = Rio_readlineb(&response_rio, response_buf, MAX_OBJECT_SIZE)) > 0) {
+  //   rio_writen(clientfd, response_buf, n);
+  //   if (strstr(response_buf, "Content-length")) 
+  //     content_length = parse_content_length(&response_buf); // 응답 body의 크기
+  //   if (strstr(response_buf, "Content-type"))  {
+  //     char *type_ptr = strstr(response_buf, "Content-type") + strlen("Content-type: ");
+  //     strcpy(content_type, type_ptr);
+  //   }
+  //   if (!strcmp(response_buf, "\r\n"))
+  //     break;
+  // }
+  // printf("=======content-type: %s\n", content_type);  
 
-  char *reponse_body = malloc(sizeof(int) * content_length);
-  /* 응답 보내기 */
-  n = Rio_readnb(&response_rio, reponse_body, content_length);
-  printf("======cache miss response body===========\n");
-  printf("%s\n", reponse_body);
-  printf("=================\n");
-  rio_writen(clientfd, reponse_body, content_length);
+  // char *reponse_body = (char*)malloc(MAX_OBJECT_SIZE);
+  // /* 응답 보내기 */
+  // n = Rio_readnb(&response_rio, reponse_body, MAX_OBJECT_SIZE);
+  // printf("======cache miss response body===========\n");
+  // printf("%s\n", reponse_body);
+  // printf("=================\n");
+  // rio_writen(clientfd, reponse_body, n);
+
+  /* 응답 헤더, 바디 모두 캐시 데이터에 저장하기 */
+  n = Rio_readnb(&response_rio, response_buf, MAX_OBJECT_SIZE);
+  printf("====response====\n%s\n", response_buf);
+  rio_writen(clientfd, response_buf, n);
 
   /* 캐시에 응답 body 저장 */
   /* 캐시 max 사이즈 체크하고 저장하기 */
-  if ((content_length < MAX_OBJECT_SIZE) && (cache_size + content_length > MAX_CACHE_SIZE)) {
-    while (cache_size + content_length > MAX_CACHE_SIZE)
+  if ((n < MAX_OBJECT_SIZE) && (cache_size + n > MAX_CACHE_SIZE)) {
+    while (cache_size + n > MAX_CACHE_SIZE)
       free_cache_obj(tail); // 한개가 아니고 여러개 삭제해야할수도잇음
   }
   printf("-----uri: %s\n", uri);
   printf("-----content-type: %s\n", content_type);
-  printf("===response_body:\n%s\n===", reponse_body);
-  create_cache_obj(uri, reponse_body, content_length, content_type);
+  printf("===response_body:\n%s\n===", response_buf);
+  create_cache_obj(uri, response_buf, n, content_type);
   Close(serverfd);
-  free(reponse_body);
+  // free(response_buf);
   free(content_type);
 }
 
