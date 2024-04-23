@@ -91,10 +91,20 @@ void doit(int clientfd)
   serverfd = Open_clientfd(hostname, port);
   printf("%s\n", request_buf);
   Rio_writen(serverfd, request_buf, strlen(request_buf));
-  
+  Rio_readinitb(&response_rio, serverfd);
+
   ssize_t n;
-  n = Rio_readn(serverfd, response_buf, MAX_OBJECT_SIZE); // 응답 받는건 OBJECT_SIZE 만큼
-  Rio_writen(clientfd, response_buf, n);
+  /* 응답 헤더 보내기 */
+  while ((n = Rio_readlineb(&response_rio, response_buf, MAX_OBJECT_SIZE)) > 0) {
+    Rio_writen(clientfd, response_buf, n);
+    if (!strcmp(response_buf, "\r\n"))
+      break;
+  }
+
+  /* 응답 본문 보내기 */
+  while ((n = Rio_readlineb(&response_rio, response_buf, MAX_OBJECT_SIZE)) > 0) {
+    Rio_writen(clientfd, response_buf, n);
+  }
   Close(serverfd);
 }
 
