@@ -9,7 +9,7 @@ static const char *user_agent_hdr =
 
 void *thread(void *vargp);
 void doit(int clientfd);
-int parse_uri(char *uri, char *hostname, char *port, char *path);
+void parse_uri(char *uri, char *hostname, char *port, char *path);
 void update_hdr(char *request_hdr, char *method, char *path);
 void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longmsg);
 
@@ -85,7 +85,7 @@ void doit(int clientfd)
 }
 
 // uri: `http://hostname:port/path` 또는 `http://hostname/path`
-int parse_uri(char *uri, char *hostname, char *port, char *path) 
+void parse_uri(char *uri, char *hostname, char *port, char *path) 
 {
   char uri_copy[MAXLINE];
   strcpy(uri_copy, uri);
@@ -101,7 +101,6 @@ int parse_uri(char *uri, char *hostname, char *port, char *path)
     strcpy(port, port_ptr + 1);
   }
   strcpy(hostname, hostname_ptr);
-  return 0;
 }
 
 void update_hdr(char *request_hdr, char *method, char *path)
